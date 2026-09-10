@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Bird Cage · Interactive ComfyUI Scene</title>
+  <link rel="stylesheet" href="/bird-cage/assets/styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div><div class="eyebrow">COMFYUI CUSTOM APP</div><h1>Bird Cage</h1></div>
+      <div class="top-actions"><select id="sessionSelect" title="Session"></select><button id="newSessionBtn" class="primary">New scene</button><span id="statusPill" class="pill">Loading…</span></div>
+    </header>
+    <main class="workspace">
+      <aside class="panel controls-panel">
+        <nav class="tabs"><button class="tab active" data-tab="scene">Scene</button><button class="tab" data-tab="compile">Compile</button><button class="tab" data-tab="workflows">Workflows</button><button class="tab" data-tab="refine">Refine</button></nav>
+        <section id="tab-scene" class="tab-pane active">
+          <h2>Source</h2><p class="muted">Start from an existing image. You can optionally provide your own revealed image and cloth mask instead of generating them.</p>
+          <label class="file-drop"><span>Starting image</span><input id="sourceFile" type="file" accept="image/*" /></label>
+          <label class="file-drop compact"><span>Optional revealed state</span><input id="revealedFile" type="file" accept="image/*" /></label>
+          <label class="file-drop compact"><span>Optional cloth mask</span><input id="maskFile" type="file" accept="image/*" /></label>
+          <div class="button-row"><button id="openMaskEditorBtn">Paint mask</button><button id="resetClothBtn">Reset cloth</button></div>
+          <div id="maskEditor" class="mask-editor hidden"><div class="subhead"><strong>Manual cloth mask</strong><button id="closeMaskEditorBtn" class="icon-btn">×</button></div><canvas id="maskCanvas"></canvas><div class="inline-controls"><label>Brush <input id="brushSize" type="range" min="5" max="160" value="48" /></label><label class="check"><input id="eraseMask" type="checkbox" /> Erase</label></div><div class="button-row"><button id="clearMaskBtn">Clear</button><button id="saveMaskBtn" class="primary">Use mask</button></div></div>
+        </section>
+        <section id="tab-compile" class="tab-pane">
+          <h2>Compile scene</h2><p class="muted">Detection and generation prompts live here. Each stage is backed by an API-format ComfyUI workflow profile.</p>
+          <label>Segmentation workflow<select id="segmentProfile"></select></label><label>Detector prompt<textarea id="detectorPrompt" rows="2"></textarea></label>
+          <div class="two-col"><label>Box threshold<input id="boxThreshold" type="number" value="0.30" min="0" max="1" step="0.01" /></label><label>Text threshold<input id="textThreshold" type="number" value="0.25" min="0" max="1" step="0.01" /></label><label>Mask expand<input id="maskExpand" type="number" value="8" min="-64" max="128" /></label><label>Mask feather<input id="maskFeather" type="number" value="2" min="0" max="64" step="0.25" /></label></div>
+          <label class="check"><input id="invertMask" type="checkbox" /> Invert segmentation mask</label><hr />
+          <label>Reveal workflow<select id="revealProfile"></select></label><label>Reveal prompt<textarea id="revealPrompt" rows="5"></textarea></label><label>Negative prompt<textarea id="negativePrompt" rows="2"></textarea></label><div id="revealGeneration"></div>
+          <details><summary>Optional cleanup pass</summary><label>Cleanup workflow<select id="cleanupProfile"></select></label><label>Cleanup prompt<textarea id="cleanupPrompt" rows="3"></textarea></label><div id="cleanupGeneration"></div></details>
+          <button id="compileBtn" class="primary wide">Compile interactive scene</button>
+        </section>
+        <section id="tab-workflows" class="tab-pane">
+          <h2>Workflow profiles</h2><p class="muted">Export a workflow from ComfyUI using <b>Save (API Format)</b>, import it here, then bind Bird Cage controls to node inputs.</p>
+          <div class="two-col"><label>Stage<select id="workflowStage"><option value="segment">Segment</option><option value="reveal">Reveal</option><option value="cleanup">Cleanup</option><option value="refine">Refine</option></select></label><label>Profile name<input id="workflowName" value="my-workflow" /></label></div>
+          <label>API workflow JSON<input id="workflowFile" type="file" accept="application/json,.json" /></label><label>Description<input id="workflowDescription" placeholder="e.g. Klein 9B distilled image edit" /></label><label>Output node<select id="workflowOutputNode"><option value="">Auto-detect first image output</option></select></label>
+          <div id="bindingEditor" class="binding-editor empty">Load an API workflow to configure bindings.</div><button id="saveWorkflowBtn" class="primary wide" disabled>Save workflow profile</button><div id="profileList" class="profile-list"></div>
+        </section>
+        <section id="tab-refine" class="tab-pane">
+          <h2>Klein / image-edit refine</h2><p class="muted">Bird Cage flattens the current interactive frame and sends only the changed region through your refine workflow. The refined result is a snapshot overlay; dragging again returns to the live mesh.</p>
+          <label class="check"><input id="refineEnabled" type="checkbox" checked /> Enable refine after drag</label><label>Refine workflow<select id="refineProfile"></select></label><label>Idle delay (ms)<input id="refineDebounce" type="number" value="450" min="100" max="10000" step="50" /></label><label>Refine prompt<textarea id="refinePrompt" rows="5"></textarea></label><label>Negative prompt<textarea id="refineNegative" rows="2"></textarea></label><div id="refineGeneration"></div><div class="button-row"><button id="refineNowBtn" class="primary">Refine now</button><button id="acceptRefineBtn">Accept</button><button id="rejectRefineBtn">Reject</button></div>
+        </section>
+      </aside>
+      <section class="stage-panel"><div class="stage-toolbar"><div><strong id="sceneTitle">No scene loaded</strong><span id="sceneMeta" class="muted"></span></div><div class="legend"><span class="dot live"></span> live mesh <span class="dot ai"></span> AI refine</div></div><div id="canvasWrap" class="canvas-wrap"><canvas id="sceneCanvas" width="1024" height="768"></canvas><div id="emptyState" class="empty-state"><div class="empty-icon">◇</div><h2>Compile a scene to start</h2><p>Upload a source image, provide or create a cloth mask, and run the reveal workflow.</p></div></div><div class="stage-footer"><span id="interactionHint">Drag the cloth directly once the scene is compiled.</span><span id="refineState"></span></div></section>
+    </main>
+  </div>
+  <script src="/bird-cage/assets/app.js"></script>
+</body>
+</html>
