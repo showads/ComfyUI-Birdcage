@@ -1,0 +1,9 @@
+{
+  "detector_prompt": "cloth sheet covering the object",
+  "reveal_prompt": "Preserve the exact camera angle, lighting, background, table, and composition. Remove the cloth covering the object and reveal what is underneath. Keep unrelated areas unchanged.",
+  "cleanup_prompt": "Preserve the composition and repair the revealed region with natural geometry, edges, shadows, and lighting.",
+  "refine_prompt": "Preserve the scene and composition. Make the displaced fabric, folds, occlusion, contact shadows, and newly revealed area physically realistic. Do not change unrelated areas.",
+  "mask_expand": 8,
+  "mask_feather": 2.0,
+  "refine_debounce_ms": 450
+}
